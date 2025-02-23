@@ -1,0 +1,12 @@
+services:
+  lss_daily_discord_overview:
+    image: ghcr.io/thescriptlist/lss_daily_discord_overview:latest
+    container_name: lss_daily_discord_overview
+    environment:
+      - "WEBHOOK_URL=https://discord.com/api/webhooks/<...>"
+      - "DISCORD_USERNAME=Aram meldet aus der Leitstelle:"
+      - "DISCORD_AVATAR=https://www.leitstellenspiel.de/images/logo-header.png"
+      - "SEND_ALWAYS=False"
+      - "PROFILE_ID="
+    volumes:
+      - ./cookies.txt:/app/cookies.txt:ro
