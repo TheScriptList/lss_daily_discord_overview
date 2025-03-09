@@ -159,7 +159,8 @@ if __name__ == "__main__":
 
     webhook_results = False
     # DEBUG: Um ein Zukünftiges Datum zu testen.
-    today = date.today() + timedelta(days=4)
+    # PowerShell: $env:DEBUG_DAYS=3; python lss_daily_discord_overview.py
+    today = date.today() + timedelta(days=int(os.getenv("DEBUG_DAYS", 0)))
     print("Startdatum: " + str(today))
     msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n\n"
 
