@@ -3,6 +3,7 @@
 import requests
 import json
 import os
+import apprise
 from bs4 import BeautifulSoup
 from datetime import datetime, date, timedelta
 from http.cookiejar import MozillaCookieJar
@@ -20,6 +21,8 @@ SCHOOLINGS_URL = BASE_URL + "/schoolings"
 CONFIG_FILE = ".env"
 COOKIES_FILE = "cookies.txt"
 load_dotenv(CONFIG_FILE)
+
+apobj = apprise.Apprise()
 
 # region CONFIG/UTILS
 # Funktion zum Laden oder Abfragen der Konfiguration
@@ -51,7 +54,7 @@ def load_cookies(file_path):
     try:
         cookie_jar.load(file_path, ignore_discard=True, ignore_expires=True)
     except FileNotFoundError:
-        send_error("Fehler: Die Datei cookies.txt wurde nicht gefunden.")
+        send_error("cookies.txt nicht gefunden")
         exit(1)
     return {cookie.name: cookie.value for cookie in cookie_jar}
 
@@ -74,17 +77,17 @@ def get_buildings():
             data = response.json()
             return data
         except json.JSONDecodeError:
-            send_error(f"❌ Fehler: Ungültige JSON-Antwort von {BUILDINGS_API}!")
+            send_error(f"Ungültige JSON-Antwort von {BUILDINGS_API}")
             return []
     else:
-        send_error(f"❌ Fehler beim Abrufen der Daten ({BUILDINGS_API}): {response.status_code}")
+        send_error(f"Fehler beim Abrufen der Daten ({BUILDINGS_API}): {response.status_code}")
         return []
 
 def get_schoolings():
     cookies = load_cookies(COOKIES_FILE)
     response = requests.get(SCHOOLINGS_URL, cookies=cookies)
     if response.status_code != 200:
-        send_error(f"❌ Fehler beim Abrufen der Daten ({SCHOOLINGS_URL}): {response.status_code}")
+        send_error(f"Fehler beim Abrufen der Daten ({SCHOOLINGS_URL}): {response.status_code}")
         return []
     
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -115,7 +118,7 @@ def get_schooling_details(schooling_url, profile_id_filter=None):
     cookies = load_cookies(COOKIES_FILE)
     response = requests.get(schooling_url, cookies=cookies)
     if response.status_code != 200:
-        send_error(f"❌ Fehler beim Abrufen der Daten ({schooling_url}): {response.status_code}")
+        send_error(f"Fehler beim Abrufen der Daten ({schooling_url}): {response.status_code}")
         return []
     
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -135,33 +138,19 @@ def get_schooling_details(schooling_url, profile_id_filter=None):
     return dict(building_count)
 # endregion FETCH
 
-# Funktion zum Senden einer Nachricht an Discord
-def send_to_discord(message, username, avatar):
-    payload = {
-        "username": username,
-        "avatar_url": avatar,
-        "content": message
-    }
-    response = requests.post(WEBHOOK_URL, json=payload)
-    if response.status_code == 204:
-        print("✅ Nachricht erfolgreich an Discord gesendet.")
-    else:
-        print(f"❌ Fehler beim Senden an Discord: {response.status_code} - {response.text}")
-
-# Funktion zum Senden von Fehlermeldungen an Discord
+# Funktion zum Senden von Fehlermeldungen
 def send_error(error_message):
-    print(error_message)
-    send_to_discord(f"⚠️ **Fehlermeldung:**\n{error_message}", DISCORD_USERNAME, DISCORD_AVATAR)
+    print("⚠️ ERROR: " + error_message)
+    apobj.notify(body=error_message, title='⚠️ ERROR', notify_type=apprise.NotifyType.FAILURE)
 
 # region MAIN
 if __name__ == "__main__":
     # Einstellungen abrufen
-    WEBHOOK_URL = get_setting("WEBHOOK_URL", message="Bitte Webhook-URL eingeben")
     PROFILE_ID = get_setting("PROFILE_ID", message="LSS Profil ID (leitstellenspiel.de/profile/<ID>)")
-    SEND_ALWAYS = get_setting("SEND_ALWAYS", message="Soll immer eine Discord-Nachricht gesendet werden?", confirm=True)
-    DISCORD_USERNAME = get_setting("DISCORD_USERNAME", message="Discord Bot Name", default="Aram meldet aus der Leitstelle:")
-    DISCORD_AVATAR = get_setting("DISCORD_AVATAR", message="Discord Bot Avatar (Als URL zum Bild)", default="https://www.leitstellenspiel.de/images/logo-header.png")
-    
+    SEND_ALWAYS = get_setting("SEND_ALWAYS", message="Soll immer eine Nachricht gesendet werden?", confirm=True)
+    APPRISE_URL = get_setting("APPRISE_URL", message="Apprise URL [discord://<BOT-NAME>@<WebhookID>/<WebhookToken>/?avatar_url=https://www.leitstellenspiel.de/images/logo-header.png]")
+    apobj.add(APPRISE_URL)
+
     webhook_results = False
     # DEBUG: Um ein Zukünftiges Datum zu testen.
     today = date.today() + timedelta(days=0)
@@ -206,14 +195,15 @@ if __name__ == "__main__":
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
-    # Nachricht für Discord vorbereiten
+    # Nachricht vorbereiten und senden
     if webhook_results:
-        print("Discord Nachricht senden...")
-        send_to_discord(msg, DISCORD_USERNAME, DISCORD_AVATAR)
+        print("Nachricht senden...")
+        apobj.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
     elif SEND_ALWAYS:
         # Nachricht nur senden, wenn gewünscht
-        print("Discord Nachricht senden...")
+        print("Nachricht senden...")
         msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n\n🚫 Heute wird keine Erweiterung fertig und keine Schulung endet."
-        send_to_discord(msg, DISCORD_USERNAME, DISCORD_AVATAR)
+        apobj.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
+
 
 # endregion Hauptprogramm
