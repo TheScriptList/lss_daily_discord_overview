@@ -3,6 +3,7 @@
 import requests
 import json
 import os
+import logging
 import apprise
 from bs4 import BeautifulSoup
 from datetime import datetime, date, timedelta
@@ -11,9 +12,11 @@ from dotenv import load_dotenv, set_key
 from inquirer.shortcuts import text as text_input, confirm as confirm_input, list_input
 from collections import defaultdict
 
+# Modul Infos
 __version__ = "2.0.0"
 __author__ = "L0rdEnki, MisterX2000"
 
+# Konst Variablen
 BASE_URL = "https://www.leitstellenspiel.de"
 USERINFO_API = BASE_URL + "/api/userinfo"
 BUILDINGS_API = BASE_URL + "/api/buildings"
@@ -22,13 +25,17 @@ SCHOOLINGS_URL = BASE_URL + "/schoolings"
 CONFIG_FILE = ".env"
 COOKIES_FILE = "cookies.txt"
 
+# Objekte Initialisieren
+log = logging.getLogger(__name__)
+appr = apprise.Apprise()
+
 # region CONFIG/UTILS
 # Funktion zum Laden oder Abfragen der Konfiguration
 def get_setting(name, message, confirm=False, choices=None, default=None):
     env_val = os.getenv(name)
 
     if env_val:
-        print(f"{name} = {(str(env_val)[:77] + '...') if len(str(env_val)) > 80 else str(env_val)}")
+        log.info(f"{name} = {(str(env_val)[:77] + '...') if len(str(env_val)) > 80 else str(env_val)}")
         
         if confirm:
             env_val = env_val.lower() == "true"
@@ -137,35 +144,40 @@ def get_schooling_details(schooling_url, profile_id_filter=None):
 
 # Funktion zum Senden von Fehlermeldungen
 def send_error(error_message):
-    print("⚠️ ERROR: " + error_message)
-    apobj.notify(body=error_message, title='⚠️ ERROR', notify_type=apprise.NotifyType.FAILURE)
+    log.error(error_message)
+    appr.notify(body=error_message, title='⚠️ ERROR', notify_type=apprise.NotifyType.FAILURE)
     exit(1)
 
 # region MAIN
-if __name__ == "__main__":
+if __name__ == "__main__":    
     # Einstellungen aus der Environment laden
     load_dotenv(CONFIG_FILE)
-    apobj = apprise.Apprise()
+
+    # Logging einrichten
+    logging.basicConfig(
+        level=os.getenv("LOGGING_LEVEL", "INFO"),
+        format="%(asctime)s %(name)-8s %(levelname)-8s %(message)s")
+    log.info("v" + str(__version__))
 
     # Einstellungen abfragen
     SEND_ALWAYS = get_setting("SEND_ALWAYS", message="Soll immer eine Nachricht gesendet werden?", confirm=True)
     APPRISE_URL = get_setting("APPRISE_URL", message="Apprise URL [Siehe README]")
-    apobj.add(APPRISE_URL)
+    appr.add(APPRISE_URL)
 
     # Weitere Daten laden
     COOKIES = load_cookies(COOKIES_FILE)
     PROFILE_ID = get_profileID()
-    print("Ermittelte Profil ID: " + str(PROFILE_ID))
+    log.info("Ermittelte Profil ID: " + str(PROFILE_ID))
 
     webhook_results = False
     # DEBUG: Um ein Zukünftiges Datum zu testen.
     # PowerShell: $env:DEBUG_DAYS=3; python lss_daily_discord_overview.py
     today = date.today() + timedelta(days=int(os.getenv("DEBUG_DAYS", 0)))
-    print("Startdatum: " + str(today))
+    log.info("Startdatum: " + str(today))
     msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n"
 
     # Gebäude-Erweiterungen auslesen
-    print("Gebäude-Erweiterungen auslesen...")
+    log.info("Gebäude-Erweiterungen auslesen...")
     results = False
     msg += "\n### 🏢 Gebäude-Erweiterungen:\n\n"
     buildings_data = get_buildings()
@@ -183,16 +195,16 @@ if __name__ == "__main__":
         msg += "Heute keine Einträge vorhanden.\n"
 
     # Schulungen auslesen
-    print("Überprüfe Schulungen...")
+    log.info("Überprüfe Schulungen...")
     results = False
     msg += "\n### 🎓 Schulungen:\n\n"
 
     schoolings = get_schoolings()
     for schooling in schoolings:
         enddatum = schooling["Enddatum"].date()
-        print(f"==> {schooling['Lehrgang']} ({str(enddatum)})")
+        log.info(f"==> {schooling['Lehrgang']} ({str(enddatum)})")
         if enddatum == today:
-            print("    --> HEUTE")
+            log.info("    --> HEUTE")
             webhook_results = True
             results = True
             participants = get_schooling_details(schooling['URL'], PROFILE_ID)
@@ -204,12 +216,12 @@ if __name__ == "__main__":
 
     # Nachricht vorbereiten und senden
     if webhook_results:
-        print("Nachricht senden...")
-        apobj.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
+        log.info("Nachricht senden...")
+        appr.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
     elif SEND_ALWAYS:
         # Nachricht nur senden, wenn gewünscht
-        print("Nachricht senden...")
+        log.info("Nachricht senden...")
         msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n\n🚫 Heute wird keine Erweiterung fertig und keine Schulung endet."
-        apobj.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
+        appr.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
 
 # endregion Hauptprogramm
