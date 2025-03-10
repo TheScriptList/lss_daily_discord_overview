@@ -162,12 +162,12 @@ if __name__ == "__main__":
     # PowerShell: $env:DEBUG_DAYS=3; python lss_daily_discord_overview.py
     today = date.today() + timedelta(days=int(os.getenv("DEBUG_DAYS", 0)))
     print("Startdatum: " + str(today))
-    msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n\n"
+    msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n"
 
     # Gebäude-Erweiterungen auslesen
     print("Gebäude-Erweiterungen auslesen...")
     results = False
-    msg += "### 🏢 Gebäude-Erweiterungen:\n"
+    msg += "\n### 🏢 Gebäude-Erweiterungen:\n\n"
     buildings_data = get_buildings()
     if buildings_data:
         for building in buildings_data:
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     # Schulungen auslesen
     print("Überprüfe Schulungen...")
     results = False
-    msg += "### \n🎓 Schulungen:\n"
+    msg += "\n### 🎓 Schulungen:\n\n"
 
     schoolings = get_schoolings()
     for schooling in schoolings:
@@ -211,6 +211,5 @@ if __name__ == "__main__":
         print("Nachricht senden...")
         msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n\n🚫 Heute wird keine Erweiterung fertig und keine Schulung endet."
         apobj.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
-
 
 # endregion Hauptprogramm
