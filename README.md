@@ -8,7 +8,7 @@ Dieses Skript ruft Daten von **Leitstellenspiel.de** ab und sendet eine täglich
 
 ## Inhaltsverzeichnis <!-- omit from toc -->
 
-- [Roadmap](#roadmap)
+- [📅 Roadmap](#-roadmap)
 - [✅ Voraussetzungen](#-voraussetzungen)
 - [🛠 Installation](#-installation)
 - [🚀 Nutzung](#-nutzung)
@@ -17,9 +17,10 @@ Dieses Skript ruft Daten von **Leitstellenspiel.de** ab und sendet eine täglich
 - [📊 Beispielausgabe](#-beispielausgabe)
 - [💡 Mitwirkende](#-mitwirkende)
 
-## Roadmap
+## 📅 Roadmap
 
-- [ ]  Benachrichtigung auf [apprise](https://github.com/caronc/apprise) umstellen. Siehe [Issue #1](https://github.com/TheScriptList/lss_daily_discord_overview/issues/1)
+- [x]  ~~Benachrichtigung auf [apprise](https://github.com/caronc/apprise) umstellen. Siehe [Issue #1](https://github.com/TheScriptList/lss_daily_discord_overview/issues/1)~~
+- [x]  ~~Automatische ermittlung der `PROFILE_ID`~~
 
 ## ✅ Voraussetzungen
 
@@ -34,9 +35,12 @@ pip install -r requirements.txt
   
 ### Notwendige Informationen <!-- omit from toc -->
 
-- Eine **Discord Webhook-URL**, um die Nachrichten zu senden.
+- Eine **Apprise URL**, um die Nachrichten zu senden.
 - Eine **gültige  `cookies.txt` Datei**, um auf die API von Leitstellenspiel zuzugreifen.
-- Deine Leitstellenspiel.de **PROFILE_ID**
+
+> Apprise bietet viele Schnittstellen, über die Benachrichtigungen gesendet werden können, z.B. Discord, E-Mail, Notifiarr und viele mehr (siehe Apprise [Wiki](https://github.com/caronc/apprise/wiki)).\
+> In dieser Anleitung zeigen wir die beispielhafte Einrichtung für Discord.\
+> Hier findet ihr die Anleitung für das Nutzen der [E-Mail Benachrichtigungen](https://github.com/caronc/apprise/wiki/Notify_email).
 
 ## 🛠 Installation
 
@@ -45,7 +49,24 @@ pip install -r requirements.txt
 1. **Discord öffnen** ➡ **Servereinstellungen** ➡ **Integrationen**
 2. **Webhook erstellen** ➡ **URL kopieren**
 
-### 2️⃣ **Cookies speichern (`cookies.txt`)** <!-- omit from toc -->
+### 2️⃣ **Apprise URL Einrichten** <!-- omit from toc -->
+
+Zum Senden an Discord müssen wir diese Apprise URL für Discord anpassen `discord://<BOT-NAME>@<WebhookID>/<WebhookToken>/?avatar_url=https://www.leitstellenspiel.de/images/logo-header.png`
+  
+Die Discord Webhook URL, die im 1. Schritt kopiert wurde, kann z.B. so aussehen: `https://discordapp.com/api/webhooks/4174216298/JHMHI8qBe7bk2ZwO5U711o3dV_js`
+  
+Die Bestandteile sind wie folgt:\
+`https://discordapp.com/api/webhooks/{WebhookID}/{WebhookToken}`
+
+In diesem Beispiel ist
+- die WebhookID `4174216298`
+- das WebhookToken `JHMHI8qBe7bk2ZwO5U711o3dV_js`
+
+Der `BOT-NAME` ist frei wählbar, für unser Beispiel nutzen wir `Leitstelle`.
+
+Am Ende sollte die Apprise URL wir folgt aussehen `discord://Leitstelle@4174216298/JHMHI8qBe7bk2ZwO5U711o3dV_js/?avatar_url=https://www.leitstellenspiel.de/images/logo-header.png`
+
+### 3️⃣ **Cookies speichern (`cookies.txt`)** <!-- omit from toc -->
 
 1. **Mit Chrome oder Firefox Cookies exportieren:**  
    🔗 [Chrome: Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)  
@@ -53,22 +74,12 @@ pip install -r requirements.txt
 2. **Auf Leitstellenspiel.de einloggen** ➡ Cookies als `cookies.txt` speichern
 3. **Format:** `Netscape HTTP Cookie File` (Tab-getrennte Zeilen)
 
-### 3️⃣ **PROFILE\_ID ermitteln** <!-- omit from toc -->
-
-1. Herausfindbar indem man mit Rechtsklick auf seinen Nutzernamen klickt und **Link in neuem Tab öffnen** auswählt.\
-  ![Schritte zur User-ID](/docs/Screenshot_Nutzername.png)
-2. Die Zahl am Ende der URL ist die **PROFILE_ID** (wobei die Zahl am Ende 4- bis 7-Stellig sein sollte).\
-  ![Beispiel-URL](/docs/Screenshot_ID.png)
-
 ### 4️⃣ **Konfiguration (.env-Datei)** <!-- omit from toc -->
 
 Beim ersten Start fragt das Skript nach:
 
-- Webhook-URL
-- PROFILE_ID
-- Sendeoptionen (Immer oder nur bei fertigen Einträgen)
-- Discord Username für Nachrichten
-- Discord Avatar
+- Sendeoptionen (Immer oder nur bei fertigen Einträgen, `False` oder `True`)
+- Apprise URL
 
 Falls Docker genutzt wird, müssen diese Werte im `docker run` Befehl oder der `docker-compose.yml` gesetzt werden.
 
@@ -92,11 +103,8 @@ Mit folgendem Befehl kann der Container gestartet werden, unter Beachtung folgen
 ````sh
 docker run -it --rm --name lss_daily_discord_overview \
 -v $PWD/cookies.txt:/app/cookies.txt:ro \
--e WEBHOOK_URL='https://discord.com/api/webhooks/<...>' \
--e DISCORD_USERNAME='Aram meldet aus der Leitstelle:' \
--e DISCORD_AVATAR='https://www.leitstellenspiel.de/images/logo-header.png' \
+-e APPRISE_URL='discord://<BOT-NAME>@<WebhookID>/<WebhookToken>/?avatar_url=https://www.leitstellenspiel.de/images/logo-header.png' \
 -e SEND_ALWAYS='False' \
--e PROFILE_ID='' \
 ghcr.io/thescriptlist/lss_daily_discord_overview:latest
 ````
 
@@ -111,11 +119,8 @@ services:
     image: ghcr.io/thescriptlist/lss_daily_discord_overview:latest
     container_name: lss_daily_discord_overview
     environment:
-      - "WEBHOOK_URL=https://discord.com/api/webhooks/<...>"
-      - "DISCORD_USERNAME=Aram meldet aus der Leitstelle:"
-      - "DISCORD_AVATAR=https://www.leitstellenspiel.de/images/logo-header.png"
+      - "APPRISE_URL=discord://<BOT-NAME>@<WebhookID>/<WebhookToken>/?avatar_url=https://www.leitstellenspiel.de/images/logo-header.png"
       - "SEND_ALWAYS=False"
-      - "PROFILE_ID="
     volumes:
       - ./cookies.txt:/app/cookies.txt:ro
 ```
@@ -157,6 +162,9 @@ Das aktuellste Release kann [hier](https://github.com/TheScriptList/lss_daily_di
 ### Konsolenausgabe (alle Einträge) <!-- omit from toc -->
 
 ```
+SEND_ALWAYS = False
+APPRISE_URL = discord://Leitstelle@4174216298/JHMHI8qBe7bk2ZwO5U711o3d...
+Ermittelte Profil ID: 12345
 Startdatum: 2025-02-07
 Gebäude-Erweiterungen auslesen...
 Überprüfe Schulungen...
@@ -166,8 +174,7 @@ Gebäude-Erweiterungen auslesen...
 ==> THW - Fachgruppe Schwere Bergung (2025-02-15)
 ==> Polizei - MEK (2025-02-20)
 ==> Polizei - SEK (2025-02-20)
-Discord Nachricht senden...
-✅ Nachricht erfolgreich an Discord gesendet.
+Nachricht senden...
 ```
 
 ### Webhook-Nachricht (abhängig von der Einstellung) <!-- omit from toc -->
@@ -198,7 +205,7 @@ Falls nur in einem der beiden Teile Einträge vorhanden sind:
 Heute keine Einträge vorhanden.
 ```
 
-Falls keine Einträge vorhanden sind und die Einstellung auf immer senden steht:
+Falls keine Einträge vorhanden sind und die Einstellung `SEND_ALWAYS = True` ist:
 
 ```md
 📢 Einträge für heute [08.02.2025]
