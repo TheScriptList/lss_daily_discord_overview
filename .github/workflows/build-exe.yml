@@ -32,7 +32,7 @@ jobs:
         run: pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Build Executable
-        run: pyinstaller -F --hidden-import inquirer --hidden-import readchar --copy-metadata readchar -n lss_daily_discord_overview-${{ runner.os }}_${{ runner.arch }} lss_daily_discord_overview.py
+        run: pyinstaller -F --collect-all apprise --hidden-import inquirer --hidden-import readchar --copy-metadata readchar -n lss_daily_discord_overview-${{ runner.os }}_${{ runner.arch }} lss_daily_discord_overview.py
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
