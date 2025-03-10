@@ -11,7 +11,7 @@ from dotenv import load_dotenv, set_key
 from inquirer.shortcuts import text as text_input, confirm as confirm_input, list_input
 from collections import defaultdict
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = "L0rdEnki, MisterX2000"
 
 BASE_URL = "https://www.leitstellenspiel.de"
@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
     # Einstellungen abfragen
     SEND_ALWAYS = get_setting("SEND_ALWAYS", message="Soll immer eine Nachricht gesendet werden?", confirm=True)
-    APPRISE_URL = get_setting("APPRISE_URL", message="Apprise URL [discord://<BOT-NAME>@<WebhookID>/<WebhookToken>/?avatar_url=https://www.leitstellenspiel.de/images/logo-header.png]")
+    APPRISE_URL = get_setting("APPRISE_URL", message="Apprise URL [Siehe README]")
     apobj.add(APPRISE_URL)
 
     # Weitere Daten laden
