@@ -8,6 +8,7 @@ Dieses Skript ruft Daten von **Leitstellenspiel.de** ab und sendet eine täglich
 
 ## Inhaltsverzeichnis <!-- omit from toc -->
 
+- [Roadmap](#roadmap)
 - [✅ Voraussetzungen](#-voraussetzungen)
 - [🛠 Installation](#-installation)
 - [🚀 Nutzung](#-nutzung)
@@ -15,6 +16,10 @@ Dieses Skript ruft Daten von **Leitstellenspiel.de** ab und sendet eine täglich
 - [❌ Fehlerbehebung](#-fehlerbehebung)
 - [📊 Beispielausgabe](#-beispielausgabe)
 - [💡 Mitwirkende](#-mitwirkende)
+
+## Roadmap
+
+- [ ]  Benachrichtigung auf [apprise](https://github.com/caronc/apprise) umstellen. Siehe [Issue #1](https://github.com/TheScriptList/lss_daily_discord_overview/issues/1)
 
 ## ✅ Voraussetzungen
 

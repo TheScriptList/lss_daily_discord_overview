@@ -15,14 +15,12 @@ __version__ = "1.0.0"
 __author__ = "L0rdEnki, MisterX2000"
 
 BASE_URL = "https://www.leitstellenspiel.de"
+USERINFO_API = BASE_URL + "/api/userinfo"
 BUILDINGS_API = BASE_URL + "/api/buildings"
 SCHOOLINGS_URL = BASE_URL + "/schoolings"
 
 CONFIG_FILE = ".env"
 COOKIES_FILE = "cookies.txt"
-load_dotenv(CONFIG_FILE)
-
-apobj = apprise.Apprise()
 
 # region CONFIG/UTILS
 # Funktion zum Laden oder Abfragen der Konfiguration
@@ -55,7 +53,6 @@ def load_cookies(file_path):
         cookie_jar.load(file_path, ignore_discard=True, ignore_expires=True)
     except FileNotFoundError:
         send_error("cookies.txt nicht gefunden")
-        exit(1)
     return {cookie.name: cookie.value for cookie in cookie_jar}
 
 # Funktion zur Umwandlung von Timestamps
@@ -69,26 +66,30 @@ def format_timestamp(timestamp):
 
 # region FETCH
 # Funktion zum Abrufen der API-Daten
+def get_response(URL):
+    response = requests.get(URL, cookies=COOKIES)
+    if response.status_code != 200:
+        send_error(f"Fehler beim Abrufen der Daten ({URL}): {response.status_code}")
+    return response
+
+def get_profileID():
+    response = get_response(USERINFO_API)
+    try:
+        data = response.json()
+        return data.get("user_id")
+    except json.JSONDecodeError:
+        send_error(f"Ungültige JSON-Antwort von {USERINFO_API}")
+
 def get_buildings():
-    cookies = load_cookies(COOKIES_FILE)
-    response = requests.get(BUILDINGS_API, cookies=cookies)
-    if response.status_code == 200:
-        try:
-            data = response.json()
-            return data
-        except json.JSONDecodeError:
-            send_error(f"Ungültige JSON-Antwort von {BUILDINGS_API}")
-            return []
-    else:
-        send_error(f"Fehler beim Abrufen der Daten ({BUILDINGS_API}): {response.status_code}")
-        return []
+    response = get_response(BUILDINGS_API)
+    try:
+        data = response.json()
+        return data
+    except json.JSONDecodeError:
+        send_error(f"Ungültige JSON-Antwort von {BUILDINGS_API}")
 
 def get_schoolings():
-    cookies = load_cookies(COOKIES_FILE)
-    response = requests.get(SCHOOLINGS_URL, cookies=cookies)
-    if response.status_code != 200:
-        send_error(f"Fehler beim Abrufen der Daten ({SCHOOLINGS_URL}): {response.status_code}")
-        return []
+    response = get_response(SCHOOLINGS_URL)
     
     soup = BeautifulSoup(response.text, 'html.parser')
     schoolings = []
@@ -115,11 +116,7 @@ def get_schoolings():
     return schoolings
 
 def get_schooling_details(schooling_url, profile_id_filter=None):
-    cookies = load_cookies(COOKIES_FILE)
-    response = requests.get(schooling_url, cookies=cookies)
-    if response.status_code != 200:
-        send_error(f"Fehler beim Abrufen der Daten ({schooling_url}): {response.status_code}")
-        return []
+    response = get_response(schooling_url)
     
     soup = BeautifulSoup(response.text, 'html.parser')
     building_count = defaultdict(int)
@@ -142,18 +139,28 @@ def get_schooling_details(schooling_url, profile_id_filter=None):
 def send_error(error_message):
     print("⚠️ ERROR: " + error_message)
     apobj.notify(body=error_message, title='⚠️ ERROR', notify_type=apprise.NotifyType.FAILURE)
+    exit(1)
 
 # region MAIN
 if __name__ == "__main__":
-    # Einstellungen abrufen
-    PROFILE_ID = get_setting("PROFILE_ID", message="LSS Profil ID (leitstellenspiel.de/profile/<ID>)")
+    # Einstellungen aus der Environment laden
+    load_dotenv(CONFIG_FILE)
+    apobj = apprise.Apprise()
+
+    # Einstellungen abfragen
     SEND_ALWAYS = get_setting("SEND_ALWAYS", message="Soll immer eine Nachricht gesendet werden?", confirm=True)
     APPRISE_URL = get_setting("APPRISE_URL", message="Apprise URL [discord://<BOT-NAME>@<WebhookID>/<WebhookToken>/?avatar_url=https://www.leitstellenspiel.de/images/logo-header.png]")
     apobj.add(APPRISE_URL)
 
+    # Weitere Daten laden
+    COOKIES = load_cookies(COOKIES_FILE)
+    PROFILE_ID = get_profileID()
+    print("Ermittelte Profil ID: " + str(PROFILE_ID))
+
     webhook_results = False
     # DEBUG: Um ein Zukünftiges Datum zu testen.
-    today = date.today() + timedelta(days=0)
+    # PowerShell: $env:DEBUG_DAYS=3; python lss_daily_discord_overview.py
+    today = date.today() + timedelta(days=int(os.getenv("DEBUG_DAYS", 0)))
     print("Startdatum: " + str(today))
     msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n\n"
 
