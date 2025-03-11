@@ -98,7 +98,7 @@ def get_buildings():
 def get_schoolings():
     response = get_response(SCHOOLINGS_URL)
     
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, "html.parser")
     schoolings = []
     
     table_rows = soup.select("table.table-striped tbody tr")
@@ -125,7 +125,7 @@ def get_schoolings():
 def get_schooling_details(schooling_url, profile_id_filter=None):
     response = get_response(schooling_url)
     
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, "html.parser")
     building_count = defaultdict(int)
     
     table_rows = soup.select("table.table-striped tbody tr")
@@ -145,7 +145,7 @@ def get_schooling_details(schooling_url, profile_id_filter=None):
 # Funktion zum Senden von Fehlermeldungen
 def send_error(error_message):
     log.error(error_message)
-    appr.notify(body=error_message, title='⚠️ ERROR', notify_type=apprise.NotifyType.FAILURE)
+    appr.notify(body=error_message, title="⚠️ ERROR", notify_type=apprise.NotifyType.FAILURE)
     exit(1)
 
 # region MAIN
@@ -209,7 +209,6 @@ if __name__ == "__main__":
                             webhook_results = True
                             results = True
                             msg += f"- {building['caption']}: {storage['upgrade_type']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
-
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
@@ -228,7 +227,6 @@ if __name__ == "__main__":
                         webhook_results = True
                         results = True
                         msg += f"- {building['caption']}: {specialization['caption']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
-
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
@@ -245,7 +243,7 @@ if __name__ == "__main__":
             log.info("    --> HEUTE")
             webhook_results = True
             results = True
-            participants = get_schooling_details(schooling['URL'], PROFILE_ID)
+            participants = get_schooling_details(schooling["URL"], PROFILE_ID)
             msg += f"- {schooling['Lehrgang']} (Fertig am: {schooling['Enddatum'].strftime('%d.%m.%Y %H:%M')}) teilgenommen haben:\n"
             for building, count in participants.items():
                 msg += f"  - {count} Person(en) aus *{building}*\n"
