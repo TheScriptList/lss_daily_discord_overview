@@ -129,7 +129,7 @@ services:
 
 ### 🏁 **Executable-Version** <!-- omit from toc -->
 
-Das aktuellste Release kann [hier](https://github.com/TheScriptList/lss_daily_discord_overview/releases) gefunden werden.
+Das aktuellste Release kann [hier](https://github.com/TheScriptList/lss_daily_discord_overview/releases/latest) gefunden werden.
 
 - **Windows:** `lss_daily_discord_overview-Windows_X64.exe` starten
 
@@ -169,6 +169,8 @@ APPRISE_URL = discord://Leitstelle@4174216298/JHMHI8qBe7bk2ZwO5U711o3d...
 Ermittelte Profil ID: 12345
 Startdatum: 2025-02-07
 Gebäude-Erweiterungen auslesen...
+Lagerräume-Erweiterungen auslesen...
+Spezialisierungen auslesen...
 Überprüfe Schulungen...
 ==> Feuerwehr - ELW 2 Lehrgang (2025-02-07)
     --> HEUTE
@@ -189,6 +191,12 @@ Falls Einträge vorhanden sind:
 🏢 Gebäude-Erweiterungen:
 - THW #1: Fachgruppe Elektroversorgung (Fertig am: 07.02.2025 21:43)
 
+📦 Lagerräume:
+- Feuerwache Potsdam: Lagerraum (Fertig am: 07.02.2025 17:13)
+
+🔧 Spezialisierungen:
+- Feuerwache Berlin: Werkfeuerwehr-Spezialisierung (Fertig am: 07.02.2025 17:14)
+
 🎓 Schulungen:
 - Feuerwehr - ELW 2 Lehrgang (Fertig am: 07.02.2025 21:30) teilgenommen haben:
   - 6 Person(en) aus Feuerwache Berlin
@@ -202,6 +210,12 @@ Falls nur in einem der beiden Teile Einträge vorhanden sind:
 
 🏢 Gebäude-Erweiterungen:
 - THW #1: Fachgruppe Elektroversorgung (Fertig am: 07.02.2025 21:43)
+
+📦 Lagerräume:
+Heute keine Einträge vorhanden.
+
+🔧 Spezialisierungen:
+Heute keine Einträge vorhanden.
 
 🎓 Schulungen:
 Heute keine Einträge vorhanden.
