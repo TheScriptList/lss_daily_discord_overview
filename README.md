@@ -2,8 +2,8 @@
 
 [![Build Executable](https://github.com/TheScriptList/lss_daily_discord_overview/actions/workflows/build-exe.yml/badge.svg)](https://github.com/TheScriptList/lss_daily_discord_overview/actions/workflows/build-exe.yml)
 [![Docker Image CI](https://github.com/TheScriptList/lss_daily_discord_overview/actions/workflows/build-docker.yml/badge.svg)](https://github.com/TheScriptList/lss_daily_discord_overview/actions/workflows/build-docker.yml)
-![GitHub Release](https://img.shields.io/github/v/release/TheScriptList/lss_daily_discord_overview?label=Latest%20Release)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/TheScriptList/lss_daily_discord_overview/total?label=Total%20Downloads)
+[![GitHub Release](https://img.shields.io/github/v/release/TheScriptList/lss_daily_discord_overview?label=Latest%20Release)](https://github.com/TheScriptList/lss_daily_discord_overview/releases/latest)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/TheScriptList/lss_daily_discord_overview/total?label=Total%20Downloads)](https://github.com/TheScriptList/lss_daily_discord_overview/releases)
 
 
 Dieses Skript ruft Daten von **Leitstellenspiel.de** ab und sendet eine tägliche Übersicht zu **Gebäude-Erweiterungen** und **Schulungen**, die heute fertig werden, an einen **Discord-Webhook**.\
