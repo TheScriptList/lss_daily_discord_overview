@@ -13,7 +13,7 @@ from inquirer.shortcuts import text as text_input, confirm as confirm_input, lis
 from collections import defaultdict
 
 # Modul Infos
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __author__ = "L0rdEnki, MisterX2000"
 
 # Konst Variablen
@@ -191,6 +191,44 @@ if __name__ == "__main__":
                             webhook_results = True
                             results = True
                             msg += f"- {building['caption']}: {extension['caption']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
+    if not results:
+        msg += "Heute keine Einträge vorhanden.\n"
+
+    # Lagerräume (Storage Upgrades) auslesen
+    log.info("Lagerräume-Erweiterungen auslesen...")
+    results = False
+    msg += "\n### 📦 Lagerräume:\n\n"
+
+    if buildings_data:
+        for building in buildings_data:
+            if isinstance(building, dict) and "storage_upgrades" in building:
+                for storage in building["storage_upgrades"]:
+                    if "available_at" in storage and storage["available_at"]:
+                        formatted_date, parsed_date = format_timestamp(storage["available_at"])
+                        if parsed_date == today:
+                            webhook_results = True
+                            results = True
+                            msg += f"- {building['caption']}: {storage['upgrade_type']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
+
+    if not results:
+        msg += "Heute keine Einträge vorhanden.\n"
+
+    # Spezialisierungen auslesen
+    log.info("Spezialisierungen auslesen...")
+    results = False
+    msg += "\n### 🔧 Spezialisierungen:\n\n"
+
+    if buildings_data:
+        for building in buildings_data:
+            if isinstance(building, dict) and "specialization" in building:
+                specialization = building["specialization"]
+                if "available_at" in specialization and specialization["available_at"]:
+                    formatted_date, parsed_date = format_timestamp(specialization["available_at"])
+                    if parsed_date == today:
+                        webhook_results = True
+                        results = True
+                        msg += f"- {building['caption']}: {specialization['caption']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
+
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
