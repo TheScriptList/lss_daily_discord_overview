@@ -21,6 +21,7 @@ Dieses Skript ruft Daten von **Leitstellenspiel.de** ab und sendet eine täglich
 
 - [x]  ~~Benachrichtigung auf [apprise](https://github.com/caronc/apprise) umstellen. Siehe [Issue #1](https://github.com/TheScriptList/lss_daily_discord_overview/issues/1)~~
 - [x]  ~~Automatische ermittlung der `PROFILE_ID`~~
+- [ ]  Hinzufügen der Lagerräume
 
 ## ✅ Voraussetzungen
 
