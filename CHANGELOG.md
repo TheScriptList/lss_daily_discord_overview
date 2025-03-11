@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.1.0
+
+- Lagerräume wurden hinzugefügt
+- Spezialisierungen wurden hinzugefügt
+
 ## v2.0.0
 
 - Benachrichtigungen wurden auf [Apprise](https://github.com/caronc/apprise) umgestellt
