@@ -128,7 +128,7 @@ services:
 
 ### 🏁 **Executable-Version** <!-- omit from toc -->
 
-Das aktuellste Release kann [hier](https://github.com/TheScriptList/lss_daily_discord_overview_test/releases/latest) gefunden werden.
+Das aktuellste Release kann [hier](https://github.com/TheScriptList/lss_daily_discord_overview/releases) gefunden werden.
 
 - **Windows:** `lss_daily_discord_overview-Windows_X64.exe` starten
 
