@@ -8,6 +8,11 @@ on:
       - "v*.*.*"
   pull_request:
 
+permissions:
+  contents: read
+  packages: write
+  actions: write
+
 jobs:
   docker:
     runs-on: ubuntu-latest
