@@ -1,0 +1,13 @@
+[project]
+name = "lss-daily-discord-overview"
+version = "2.1.0"
+description = "Dieses Skript ruft Daten von Leitstellenspiel.de ab und sendet eine tägliche Übersicht zu Gebäude-Erweiterungen und Schulungen, die heute fertig werden, an einen Discord-Webhook."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "apprise~=1.9.2",
+    "beautifulsoup4~=4.13.3",
+    "inquirer~=3.4.0",
+    "python-dotenv~=1.0.1",
+    "requests~=2.32.3",
+]
