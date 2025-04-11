@@ -1,22 +1,28 @@
 name: Build Executable
 
 on:
-  workflow_dispatch:
   push:
+    branches: 
+      - "**"
     tags:
       - "v*.*.*"
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: write
   actions: write
+
+env:
+  PROJECT_NAME: lss_daily_discord_overview
+  BUILD_ARGS: -F --collect-all apprise --hidden-import inquirer --hidden-import readchar --copy-metadata readchar
 
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        #os: [macos-latest, ubuntu-latest, windows-latest]
-        os: [windows-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -34,10 +40,29 @@ jobs:
             **/requirements*.txt
 
       - name: Install Dependencies
-        run: pip install -r requirements.txt -r requirements-dev.txt
+        run: pip install -r requirements.txt -r requirements-build.txt
+
+      - name: Define Build Name
+        shell: python
+        run: |
+          from os import getenv
+
+          project_name = getenv("PROJECT_NAME")
+          ref_name = getenv("GITHUB_REF_NAME")
+          ref_type = getenv("GITHUB_REF_TYPE")
+          sha = getenv("GITHUB_SHA")[:7]
+          os_name = getenv("RUNNER_OS").lower()
+          arch = getenv("RUNNER_ARCH").lower()
+
+          sha_suffix = f"-{sha}" if ref_type != "tag" else ""
+          build_name = f"{project_name}-{ref_name}{sha_suffix}_{os_name}_{arch}"
+
+          with open(getenv("GITHUB_ENV"), "a") as env_file:
+            env_file.write(f"BUILD_NAME={build_name}\n")
 
       - name: Build Executable
-        run: pyinstaller -F --collect-all apprise --hidden-import inquirer --hidden-import readchar --copy-metadata readchar -n lss_daily_discord_overview-${{ github.ref_name }}_${{ runner.os }}_${{ runner.arch }} lss_daily_discord_overview.py
+        run: |
+          pyinstaller ${{ env.BUILD_ARGS }} -n "${{ env.BUILD_NAME }}" "${{ env.PROJECT_NAME }}.py"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -47,7 +72,7 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.ref_type == 'tag'
         with:
           draft: true
           generate_release_notes: true
