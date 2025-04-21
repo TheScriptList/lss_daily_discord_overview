@@ -1,5 +1,5 @@
 requests~=2.32.3
 inquirer~=3.4.0
 python-dotenv~=1.1.0
-beautifulsoup4~=4.13.3
+beautifulsoup4~=4.13.4
 apprise~=1.9.3
