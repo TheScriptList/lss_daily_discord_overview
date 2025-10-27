@@ -8,6 +8,6 @@ dependencies = [
     "apprise~=1.9.2",
     "beautifulsoup4~=4.13.3",
     "inquirer~=3.4.0",
-    "python-dotenv~=1.1.0",
+    "python-dotenv~=1.2.1",
     "requests~=2.32.3",
 ]
