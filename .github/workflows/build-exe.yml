@@ -2,11 +2,10 @@ name: Build Executable
 
 on:
   push:
-    branches: 
+    branches:
       - "**"
     tags:
       - "v*.*.*"
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -48,7 +47,7 @@ jobs:
           from os import getenv
 
           project_name = getenv("PROJECT_NAME")
-          ref_name = getenv("GITHUB_REF_NAME")
+          ref_name = getenv("GITHUB_REF_NAME").replace("/", "-")
           ref_type = getenv("GITHUB_REF_TYPE")
           sha = getenv("GITHUB_SHA")[:7]
           os_name = getenv("RUNNER_OS").lower()
