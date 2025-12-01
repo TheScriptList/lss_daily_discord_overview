@@ -196,7 +196,4 @@ pyrightconfig.json
 
 
 cookies.txt
-config.ini
 docker-compose.yml
-example Building.json
-uv.lock
