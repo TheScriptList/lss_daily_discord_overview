@@ -6,7 +6,7 @@ import os
 import logging
 import apprise
 from bs4 import BeautifulSoup
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta, timezone
 from http.cookiejar import MozillaCookieJar
 from dotenv import load_dotenv, set_key
 from inquirer.shortcuts import text as text_input, confirm as confirm_input, list_input
@@ -63,19 +63,21 @@ def load_cookies(file_path):
     return {cookie.name: cookie.value for cookie in cookie_jar}
 
 # Funktion zur Umwandlung von Timestamps
-def format_timestamp(timestamp):
-    try:
-        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        return dt.strftime("%d.%m.%Y %H:%M"), dt.date()
-    except ValueError:
-        return "Ungültiges Datum", None
+def parse_iso_epoch(timestamp):
+    """Return unix epoch integer (seconds) from an ISO timestamp string or None."""
+    dt = parse_iso_datetime(timestamp)
+    return int(dt.timestamp()) if dt else None
 
 def parse_iso_datetime(timestamp):
     """Parse an ISO timestamp string into a datetime, return None if parsing fails."""
     if not timestamp:
         return None
     try:
-        return datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        # Normalize to timezone-aware UTC
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
     except Exception:
         return None
 # endregion CONFIG/UTILS
@@ -116,7 +118,9 @@ def get_schoolings():
         
         lehrgang_name = columns[0].get_text(strip=True)
         enddatum_sortvalue = columns[1].get("sortvalue")
-        enddatum = datetime.now() + timedelta(seconds=int(enddatum_sortvalue)) if enddatum_sortvalue else None
+        # Use timezone-aware datetime in UTC and then store as unix epoch
+        end_dt = datetime.now(timezone.utc) + timedelta(seconds=int(enddatum_sortvalue)) if enddatum_sortvalue else None
+        end_epoch = int(end_dt.timestamp()) if end_dt else None
 
         lehrgangsausfuehrer = columns[2].find("a").get_text(strip=True) if columns[2].find("a") else columns[2].get_text(strip=True)
         schooling_id = columns[0].find("a")["href"].split("/")[-1]
@@ -124,7 +128,7 @@ def get_schoolings():
         
         schoolings.append({
             "Lehrgang": lehrgang_name,
-            "Enddatum": enddatum,
+            "Enddatum": end_epoch,
             "Lehrgangsausführer": lehrgangsausfuehrer,
             "URL": schooling_url
         })
@@ -144,8 +148,8 @@ def get_schooling_details(schooling_url, profile_id_filter=None):
         profile_link = columns[2].find("a")
         profile_id = profile_link["href"].split("/")[-1] if profile_link else "Unknown"
         building = columns[3].find("a").get_text(strip=True) if columns[3].find("a") else "Unknown"
-        
-        if profile_id_filter is None or profile_id == profile_id_filter:
+
+        if profile_id_filter is None or int(profile_id) == int(profile_id_filter):
             building_count[building] += 1
     
     return dict(building_count)
@@ -181,9 +185,14 @@ if __name__ == "__main__":
     webhook_results = False
     # DEBUG: Um ein Zukünftiges Datum zu testen.
     # PowerShell: $env:DEBUG_DAYS=3; python lss_daily_discord_overview.py
-    today = date.today() + timedelta(days=int(os.getenv("DEBUG_DAYS", 0)))
-    log.info("Startdatum: " + str(today))
-    msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n"
+    # Compute `today` in UTC to align with parsed timezone-aware timestamps
+    today_dt = datetime.now(timezone.utc) + timedelta(days=int(os.getenv("DEBUG_DAYS", 0)))
+    today_start_dt = datetime(today_dt.year, today_dt.month, today_dt.day, tzinfo=timezone.utc)
+    tomorrow_start_dt = today_start_dt + timedelta(days=1)
+    today_start_epoch = int(today_start_dt.timestamp())
+    tomorrow_start_epoch = int(tomorrow_start_dt.timestamp())
+    log.info("Startdatum: " + str(today_start_dt.date()))
+    msg = f"## 📢 Einträge für heute [<t:{today_start_epoch}:d>]\n"
 
     # Gebäude-Erweiterungen auslesen
     log.info("Gebäude-Erweiterungen auslesen...")
@@ -202,15 +211,14 @@ if __name__ == "__main__":
         specialization_list = []
 
     if extensions_list:
-        log.info("Sortiere Gebäude-Erweiterungen nach Verfügbarkeitsdatum...")
-        extensions_list.sort(key=lambda be: parse_iso_datetime(be[1].get("available_at")) or datetime.max)
+        extensions_list.sort(key=lambda be: parse_iso_epoch(be[1].get("available_at")) or float('inf'))
         for building, extension in extensions_list:
             if "available_at" in extension and extension["available_at"]:
-                formatted_date, parsed_date = format_timestamp(extension["available_at"])
-                if parsed_date == today:
+                epoch = parse_iso_epoch(extension["available_at"])
+                if epoch is not None and epoch >= today_start_epoch and epoch < tomorrow_start_epoch:
                     webhook_results = True
                     results = True
-                    msg += f"- {building['caption']}: {extension['caption']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
+                    msg += f"- {building['caption']}: {extension['caption']} (Fertig am: <t:{epoch}:f> <t:{epoch}:R>)\n"
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
@@ -220,15 +228,14 @@ if __name__ == "__main__":
     msg += "\n### 📦 Lagerräume:\n\n"
 
     if storage_upgrades_list:
-        log.info("Sortiere Lagerräume nach Verfügbarkeitsdatum...")
-        storage_upgrades_list.sort(key=lambda bs: parse_iso_datetime(bs[1].get("available_at")) or datetime.max)
+        storage_upgrades_list.sort(key=lambda bs: parse_iso_epoch(bs[1].get("available_at")) or float('inf'))
         for building, storage in storage_upgrades_list:
             if "available_at" in storage and storage["available_at"]:
-                formatted_date, parsed_date = format_timestamp(storage["available_at"])
-                if parsed_date == today:
+                epoch = parse_iso_epoch(storage["available_at"])
+                if epoch is not None and epoch >= today_start_epoch and epoch < tomorrow_start_epoch:
                     webhook_results = True
                     results = True
-                    msg += f"- {building['caption']}: {storage['upgrade_type']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
+                    msg += f"- {building['caption']}: {storage['upgrade_type']} (Fertig am: <t:{epoch}:f> <t:{epoch}:R>)\n"
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
@@ -238,15 +245,14 @@ if __name__ == "__main__":
     msg += "\n### 🔧 Spezialisierungen:\n\n"
 
     if specialization_list:
-        log.info("Sortiere Spezialisierungen nach Verfügbarkeitsdatum...")
-        specialization_list.sort(key=lambda bs: parse_iso_datetime(bs[1].get("available_at")) or datetime.max)
+        specialization_list.sort(key=lambda bs: parse_iso_epoch(bs[1].get("available_at")) or float('inf'))
         for building, specialization in specialization_list:
             if "available_at" in specialization and specialization["available_at"]:
-                formatted_date, parsed_date = format_timestamp(specialization["available_at"])
-                if parsed_date == today:
+                epoch = parse_iso_epoch(specialization["available_at"])
+                if epoch is not None and epoch >= today_start_epoch and epoch < tomorrow_start_epoch:
                     webhook_results = True
                     results = True
-                    msg += f"- {building['caption']}: {specialization['caption']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
+                    msg += f"- {building['caption']}: {specialization['caption']} (Fertig am: <t:{epoch}:f> <t:{epoch}:R>)\n"
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
@@ -258,17 +264,16 @@ if __name__ == "__main__":
     schoolings = get_schoolings()
     # Sort schoolings by end date ascending (earliest first)
     if isinstance(schoolings, list):
-        log.info("Sortiere Schulungen nach Enddatum...")
-        schoolings.sort(key=lambda s: (s.get("Enddatum") or datetime.max))
+            schoolings.sort(key=lambda s: (s.get("Enddatum") or float('inf')))
     for schooling in schoolings:
-        enddatum = schooling["Enddatum"].date()
-        log.info(f"==> {schooling['Lehrgang']} ({str(enddatum)})")
-        if enddatum == today:
+        epoch = schooling.get("Enddatum")
+        log.info(f"==> {schooling['Lehrgang']}")
+        if epoch is not None and epoch >= today_start_epoch and epoch < tomorrow_start_epoch:
             log.info("    --> HEUTE")
             webhook_results = True
             results = True
             participants = get_schooling_details(schooling["URL"], PROFILE_ID)
-            msg += f"- {schooling['Lehrgang']} (Fertig am: {schooling['Enddatum'].strftime('%d.%m.%Y %H:%M')}) teilgenommen haben:\n"
+            msg += f"- {schooling['Lehrgang']} (Fertig am: <t:{epoch}:f> <t:{epoch}:R>) teilgenommen haben:\n"
             for building, count in participants.items():
                 msg += f"  - {count} Person(en) aus *{building}*\n"
     if not results:
@@ -281,7 +286,7 @@ if __name__ == "__main__":
     elif SEND_ALWAYS:
         # Nachricht nur senden, wenn gewünscht
         log.info("Nachricht senden...")
-        msg = f"## 📢 Einträge für heute [{today.strftime('%d.%m.%Y')}]\n\n🚫 Heute wird keine Erweiterung fertig und keine Schulung endet."
+        msg = f"## 📢 Einträge für heute [<t:{today_start_epoch}:d>]\n\n🚫 Heute wird keine Erweiterung fertig und keine Schulung endet."
         appr.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
 
 # endregion Hauptprogramm
