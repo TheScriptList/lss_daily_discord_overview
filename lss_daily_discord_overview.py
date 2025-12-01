@@ -69,6 +69,15 @@ def format_timestamp(timestamp):
         return dt.strftime("%d.%m.%Y %H:%M"), dt.date()
     except ValueError:
         return "Ungültiges Datum", None
+
+def parse_iso_datetime(timestamp):
+    """Parse an ISO timestamp string into a datetime, return None if parsing fails."""
+    if not timestamp:
+        return None
+    try:
+        return datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    except Exception:
+        return None
 # endregion CONFIG/UTILS
 
 # region FETCH
@@ -181,16 +190,27 @@ if __name__ == "__main__":
     results = False
     msg += "\n### 🏢 Gebäude-Erweiterungen:\n\n"
     buildings_data = get_buildings()
+
+    # Split buildings_data
     if buildings_data:
-        for building in buildings_data:
-            if isinstance(building, dict) and "extensions" in building:
-                for extension in building["extensions"]:
-                    if "available_at" in extension and extension["available_at"]:
-                        formatted_date, parsed_date = format_timestamp(extension["available_at"])
-                        if parsed_date == today:
-                            webhook_results = True
-                            results = True
-                            msg += f"- {building['caption']}: {extension['caption']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
+        extensions_list = [(building, ext) for building in buildings_data if isinstance(building, dict) for ext in building.get("extensions", [])]
+        storage_upgrades_list = [(building, st) for building in buildings_data if isinstance(building, dict) for st in building.get("storage_upgrades", [])]
+        specialization_list = [(building, building["specialization"]) for building in buildings_data if isinstance(building, dict) and "specialization" in building]
+    else:
+        extensions_list = []
+        storage_upgrades_list = []
+        specialization_list = []
+
+    if extensions_list:
+        log.info("Sortiere Gebäude-Erweiterungen nach Verfügbarkeitsdatum...")
+        extensions_list.sort(key=lambda be: parse_iso_datetime(be[1].get("available_at")) or datetime.max)
+        for building, extension in extensions_list:
+            if "available_at" in extension and extension["available_at"]:
+                formatted_date, parsed_date = format_timestamp(extension["available_at"])
+                if parsed_date == today:
+                    webhook_results = True
+                    results = True
+                    msg += f"- {building['caption']}: {extension['caption']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
@@ -199,16 +219,16 @@ if __name__ == "__main__":
     results = False
     msg += "\n### 📦 Lagerräume:\n\n"
 
-    if buildings_data:
-        for building in buildings_data:
-            if isinstance(building, dict) and "storage_upgrades" in building:
-                for storage in building["storage_upgrades"]:
-                    if "available_at" in storage and storage["available_at"]:
-                        formatted_date, parsed_date = format_timestamp(storage["available_at"])
-                        if parsed_date == today:
-                            webhook_results = True
-                            results = True
-                            msg += f"- {building['caption']}: {storage['upgrade_type']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
+    if storage_upgrades_list:
+        log.info("Sortiere Lagerräume nach Verfügbarkeitsdatum...")
+        storage_upgrades_list.sort(key=lambda bs: parse_iso_datetime(bs[1].get("available_at")) or datetime.max)
+        for building, storage in storage_upgrades_list:
+            if "available_at" in storage and storage["available_at"]:
+                formatted_date, parsed_date = format_timestamp(storage["available_at"])
+                if parsed_date == today:
+                    webhook_results = True
+                    results = True
+                    msg += f"- {building['caption']}: {storage['upgrade_type']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
@@ -217,16 +237,16 @@ if __name__ == "__main__":
     results = False
     msg += "\n### 🔧 Spezialisierungen:\n\n"
 
-    if buildings_data:
-        for building in buildings_data:
-            if isinstance(building, dict) and "specialization" in building:
-                specialization = building["specialization"]
-                if "available_at" in specialization and specialization["available_at"]:
-                    formatted_date, parsed_date = format_timestamp(specialization["available_at"])
-                    if parsed_date == today:
-                        webhook_results = True
-                        results = True
-                        msg += f"- {building['caption']}: {specialization['caption']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
+    if specialization_list:
+        log.info("Sortiere Spezialisierungen nach Verfügbarkeitsdatum...")
+        specialization_list.sort(key=lambda bs: parse_iso_datetime(bs[1].get("available_at")) or datetime.max)
+        for building, specialization in specialization_list:
+            if "available_at" in specialization and specialization["available_at"]:
+                formatted_date, parsed_date = format_timestamp(specialization["available_at"])
+                if parsed_date == today:
+                    webhook_results = True
+                    results = True
+                    msg += f"- {building['caption']}: {specialization['caption']} (Fertig am: {formatted_date or 'Unbekannt'})\n"
     if not results:
         msg += "Heute keine Einträge vorhanden.\n"
 
@@ -236,6 +256,10 @@ if __name__ == "__main__":
     msg += "\n### 🎓 Schulungen:\n\n"
 
     schoolings = get_schoolings()
+    # Sort schoolings by end date ascending (earliest first)
+    if isinstance(schoolings, list):
+        log.info("Sortiere Schulungen nach Enddatum...")
+        schoolings.sort(key=lambda s: (s.get("Enddatum") or datetime.max))
     for schooling in schoolings:
         enddatum = schooling["Enddatum"].date()
         log.info(f"==> {schooling['Lehrgang']} ({str(enddatum)})")
