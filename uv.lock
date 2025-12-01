@@ -186,7 +186,7 @@ wheels = [
 [[package]]
 name = "lss-daily-discord-overview"
 version = "2.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "apprise" },
     { name = "beautifulsoup4" },
