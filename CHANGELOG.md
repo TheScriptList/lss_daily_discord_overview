@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.2.0
+
+- Ereignisse nach Datum/Uhrzeit sortiert
+- Internes Handling von Daten in UTC
+
 ## v2.1.0
 
 - Lagerräume wurden hinzugefügt
