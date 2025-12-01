@@ -1,9 +1,5 @@
 FROM ghcr.io/astral-sh/uv:alpine
 
-# Setup a non-root user
-RUN groupadd --system --gid 999 nonroot \
- && useradd --system --gid 999 --uid 999 --create-home nonroot
-
 # Install the project into `/app`
 WORKDIR /app
 
@@ -34,8 +30,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-# Use the non-root user to run our application
-USER nonroot
-
 # Run the application by default
-CMD [ "uv", "run", "lss-daily-discord-overview" ]
+CMD [ "uv", "run", "lss_daily_discord_overview.py" ]
