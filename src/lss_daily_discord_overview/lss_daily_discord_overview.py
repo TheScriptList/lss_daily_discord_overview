@@ -7,14 +7,17 @@ import logging
 import apprise
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
-from http.cookiejar import MozillaCookieJar
-from dotenv import load_dotenv, set_key
-from inquirer.shortcuts import text as text_input, confirm as confirm_input, list_input
 from collections import defaultdict
+from dotenv import load_dotenv
+from importlib.metadata import version
 
-# Modul Infos
-__version__ = "2.2.0"
-__author__ = "L0rdEnki, MisterX2000"
+from .utils import (
+    CONFIG_FILE,
+    COOKIES_FILE,
+    get_setting,
+    load_cookies,
+    parse_iso_epoch,
+)
 
 # Konst Variablen
 BASE_URL = "https://www.leitstellenspiel.de"
@@ -22,92 +25,38 @@ USERINFO_API = BASE_URL + "/api/userinfo"
 BUILDINGS_API = BASE_URL + "/api/buildings"
 SCHOOLINGS_URL = BASE_URL + "/schoolings"
 
-CONFIG_FILE = ".env"
-COOKIES_FILE = "cookies.txt"
-
 # Objekte Initialisieren
 log = logging.getLogger(__name__)
 appr = apprise.Apprise()
 
 # region CONFIG/UTILS
-# Funktion zum Laden oder Abfragen der Konfiguration
-def get_setting(name, message, confirm=False, choices=None, default=None):
-    env_val = os.getenv(name)
-
-    if env_val:
-        log.info(f"{name} = {(str(env_val)[:77] + '...') if len(str(env_val)) > 80 else str(env_val)}")
-        
-        if confirm:
-            env_val = env_val.lower() == "true"
-
-        return env_val
-
-    if confirm:
-        ans = confirm_input(message=message, default=default)
-    elif choices:
-        ans = list_input(message=message, choices=choices, default=default)
-    else:
-        ans = text_input(message=message, default=default)
-
-    set_key(CONFIG_FILE, name, str(ans))
-
-    return ans
-
-# Funktion zum Laden der Cookies
-def load_cookies(file_path):
-    cookie_jar = MozillaCookieJar()
-    try:
-        cookie_jar.load(file_path, ignore_discard=True, ignore_expires=True)
-    except FileNotFoundError:
-        send_error("cookies.txt nicht gefunden")
-    return {cookie.name: cookie.value for cookie in cookie_jar}
-
-# Funktion zur Umwandlung von Timestamps
-def parse_iso_epoch(timestamp):
-    """Return unix epoch integer (seconds) from an ISO timestamp string or None."""
-    dt = parse_iso_datetime(timestamp)
-    return int(dt.timestamp()) if dt else None
-
-def parse_iso_datetime(timestamp):
-    """Parse an ISO timestamp string into a datetime, return None if parsing fails."""
-    if not timestamp:
-        return None
-    try:
-        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        # Normalize to timezone-aware UTC
-        if dt.tzinfo is None:
-            return dt.replace(tzinfo=timezone.utc)
-        return dt.astimezone(timezone.utc)
-    except Exception:
-        return None
-# endregion CONFIG/UTILS
 
 # region FETCH
 # Funktion zum Abrufen der API-Daten
-def get_response(URL):
-    response = requests.get(URL, cookies=COOKIES)
+def get_response(URL, cookies):
+    response = requests.get(URL, cookies=cookies)
     if response.status_code != 200:
         send_error(f"Fehler beim Abrufen der Daten ({URL}): {response.status_code}")
     return response
 
-def get_profileID():
-    response = get_response(USERINFO_API)
+def get_profileID(cookies):
+    response = get_response(USERINFO_API, cookies)
     try:
         data = response.json()
         return data.get("user_id")
     except json.JSONDecodeError:
         send_error(f"Ungültige JSON-Antwort von {USERINFO_API}")
 
-def get_buildings():
-    response = get_response(BUILDINGS_API)
+def get_buildings(cookies):
+    response = get_response(BUILDINGS_API, cookies)
     try:
         data = response.json()
         return data
     except json.JSONDecodeError:
         send_error(f"Ungültige JSON-Antwort von {BUILDINGS_API}")
 
-def get_schoolings():
-    response = get_response(SCHOOLINGS_URL)
+def get_schoolings(cookies):
+    response = get_response(SCHOOLINGS_URL, cookies)
     
     soup = BeautifulSoup(response.text, "html.parser")
     schoolings = []
@@ -135,8 +84,8 @@ def get_schoolings():
     
     return schoolings
 
-def get_schooling_details(schooling_url, profile_id_filter=None):
-    response = get_response(schooling_url)
+def get_schooling_details(schooling_url, cookies, profile_id_filter=None):
+    response = get_response(schooling_url, cookies)
     
     soup = BeautifulSoup(response.text, "html.parser")
     building_count = defaultdict(int)
@@ -162,15 +111,16 @@ def send_error(error_message):
     exit(1)
 
 # region MAIN
-if __name__ == "__main__":    
+def main():
+    """Main entry point for the application"""
     # Einstellungen aus der Environment laden
-    load_dotenv(CONFIG_FILE)
+    load_dotenv(str(CONFIG_FILE))
 
     # Logging einrichten
     logging.basicConfig(
         level=os.getenv("LOGGING_LEVEL", "INFO"),
         format="%(asctime)s %(name)-8s %(levelname)-8s %(message)s")
-    log.info("v" + str(__version__))
+    log.info("v" + version("lss-daily-discord-overview"))
 
     # Einstellungen abfragen
     SEND_ALWAYS = get_setting("SEND_ALWAYS", message="Soll immer eine Nachricht gesendet werden?", confirm=True)
@@ -179,7 +129,7 @@ if __name__ == "__main__":
 
     # Weitere Daten laden
     COOKIES = load_cookies(COOKIES_FILE)
-    PROFILE_ID = get_profileID()
+    PROFILE_ID = get_profileID(COOKIES)
     log.info("Ermittelte Profil ID: " + str(PROFILE_ID))
 
     webhook_results = False
@@ -198,7 +148,7 @@ if __name__ == "__main__":
     log.info("Gebäude-Erweiterungen auslesen...")
     results = False
     msg += "\n### 🏢 Gebäude-Erweiterungen:\n\n"
-    buildings_data = get_buildings()
+    buildings_data = get_buildings(COOKIES)
 
     # Split buildings_data
     if buildings_data:
@@ -261,7 +211,7 @@ if __name__ == "__main__":
     results = False
     msg += "\n### 🎓 Schulungen:\n\n"
 
-    schoolings = get_schoolings()
+    schoolings = get_schoolings(COOKIES)
     # Sort schoolings by end date ascending (earliest first)
     if isinstance(schoolings, list):
             schoolings.sort(key=lambda s: (s.get("Enddatum") or float('inf')))
@@ -272,7 +222,7 @@ if __name__ == "__main__":
             log.info("    --> HEUTE")
             webhook_results = True
             results = True
-            participants = get_schooling_details(schooling["URL"], PROFILE_ID)
+            participants = get_schooling_details(schooling["URL"], COOKIES, PROFILE_ID)
             msg += f"- {schooling['Lehrgang']} (Fertig am: <t:{epoch}:f> <t:{epoch}:R>) teilgenommen haben:\n"
             for building, count in participants.items():
                 msg += f"  - {count} Person(en) aus *{building}*\n"
@@ -290,3 +240,6 @@ if __name__ == "__main__":
         appr.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
 
 # endregion Hauptprogramm
+
+if __name__ == "__main__":
+    main()

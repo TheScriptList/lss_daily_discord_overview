@@ -25,5 +25,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Use `/app` as the working directory
 WORKDIR /app
 
-# Run the application by default
-CMD [ "python", "./lss_daily_discord_overview.py" ]
+# Run the application by default using the console script
+CMD [ "lss-daily-discord-overview" ]
