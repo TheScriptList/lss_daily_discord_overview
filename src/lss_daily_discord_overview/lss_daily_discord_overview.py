@@ -29,7 +29,6 @@ SCHOOLINGS_URL = BASE_URL + "/schoolings"
 log = logging.getLogger(__name__)
 appr = apprise.Apprise()
 
-# region CONFIG/UTILS
 
 # region FETCH
 # Funktion zum Abrufen der API-Daten
@@ -39,6 +38,7 @@ def get_response(URL, cookies):
         send_error(f"Fehler beim Abrufen der Daten ({URL}): {response.status_code}")
     return response
 
+
 def get_profileID(cookies):
     response = get_response(USERINFO_API, cookies)
     try:
@@ -46,6 +46,7 @@ def get_profileID(cookies):
         return data.get("user_id")
     except json.JSONDecodeError:
         send_error(f"Ungültige JSON-Antwort von {USERINFO_API}")
+
 
 def get_buildings(cookies):
     response = get_response(BUILDINGS_API, cookies)
@@ -55,16 +56,17 @@ def get_buildings(cookies):
     except json.JSONDecodeError:
         send_error(f"Ungültige JSON-Antwort von {BUILDINGS_API}")
 
+
 def get_schoolings(cookies):
     response = get_response(SCHOOLINGS_URL, cookies)
-    
+
     soup = BeautifulSoup(response.text, "html.parser")
     schoolings = []
-    
+
     table_rows = soup.select("table.table-striped tbody tr")
     for row in table_rows:
         columns = row.find_all("td")
-        
+
         lehrgang_name = columns[0].get_text(strip=True)
         enddatum_sortvalue = columns[1].get("sortvalue")
         # Use timezone-aware datetime in UTC and then store as unix epoch
@@ -84,31 +86,34 @@ def get_schoolings(cookies):
     
     return schoolings
 
+
 def get_schooling_details(schooling_url, cookies, profile_id_filter=None):
     response = get_response(schooling_url, cookies)
-    
+
     soup = BeautifulSoup(response.text, "html.parser")
     building_count = defaultdict(int)
-    
+
     table_rows = soup.select("table.table-striped tbody tr")
     for row in table_rows:
         columns = row.find_all("td")
-        
+
         profile_link = columns[2].find("a")
         profile_id = profile_link["href"].split("/")[-1] if profile_link else "Unknown"
         building = columns[3].find("a").get_text(strip=True) if columns[3].find("a") else "Unknown"
 
         if profile_id_filter is None or int(profile_id) == int(profile_id_filter):
             building_count[building] += 1
-    
+
     return dict(building_count)
 # endregion FETCH
+
 
 # Funktion zum Senden von Fehlermeldungen
 def send_error(error_message):
     log.error(error_message)
     appr.notify(body=error_message, title="⚠️ ERROR", notify_type=apprise.NotifyType.FAILURE)
     exit(1)
+
 
 # region MAIN
 def main():
@@ -161,7 +166,7 @@ def main():
         specialization_list = []
 
     if extensions_list:
-        extensions_list.sort(key=lambda be: parse_iso_epoch(be[1].get("available_at")) or float('inf'))
+        extensions_list.sort(key=lambda be: parse_iso_epoch(be[1].get("available_at")) or float("inf"))
         for building, extension in extensions_list:
             if "available_at" in extension and extension["available_at"]:
                 epoch = parse_iso_epoch(extension["available_at"])
@@ -178,7 +183,7 @@ def main():
     msg += "\n### 📦 Lagerräume:\n\n"
 
     if storage_upgrades_list:
-        storage_upgrades_list.sort(key=lambda bs: parse_iso_epoch(bs[1].get("available_at")) or float('inf'))
+        storage_upgrades_list.sort(key=lambda bs: parse_iso_epoch(bs[1].get("available_at")) or float("inf"))
         for building, storage in storage_upgrades_list:
             if "available_at" in storage and storage["available_at"]:
                 epoch = parse_iso_epoch(storage["available_at"])
@@ -195,7 +200,7 @@ def main():
     msg += "\n### 🔧 Spezialisierungen:\n\n"
 
     if specialization_list:
-        specialization_list.sort(key=lambda bs: parse_iso_epoch(bs[1].get("available_at")) or float('inf'))
+        specialization_list.sort(key=lambda bs: parse_iso_epoch(bs[1].get("available_at")) or float("inf"))
         for building, specialization in specialization_list:
             if "available_at" in specialization and specialization["available_at"]:
                 epoch = parse_iso_epoch(specialization["available_at"])
@@ -214,7 +219,7 @@ def main():
     schoolings = get_schoolings(COOKIES)
     # Sort schoolings by end date ascending (earliest first)
     if isinstance(schoolings, list):
-            schoolings.sort(key=lambda s: (s.get("Enddatum") or float('inf')))
+        schoolings.sort(key=lambda s: (s.get("Enddatum") or float("inf")))
     for schooling in schoolings:
         epoch = schooling.get("Enddatum")
         log.info(f"==> {schooling['Lehrgang']}")
@@ -238,8 +243,7 @@ def main():
         log.info("Nachricht senden...")
         msg = f"## 📢 Einträge für heute [<t:{today_start_epoch}:d>]\n\n🚫 Heute wird keine Erweiterung fertig und keine Schulung endet."
         appr.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
-
-# endregion Hauptprogramm
+# endregion MAIN
 
 if __name__ == "__main__":
     main()

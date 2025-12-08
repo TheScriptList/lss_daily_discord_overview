@@ -9,16 +9,16 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
-    "apprise~=1.9.2",
-    "beautifulsoup4~=4.13.3",
-    "inquirer~=3.4.0",
-    "python-dotenv~=1.1.0",
-    "requests~=2.32.3",
+    "apprise~=1.9.5",
+    "beautifulsoup4~=4.14.3",
+    "inquirer~=3.4.1",
+    "python-dotenv~=1.2.1",
+    "requests~=2.32.5",
 ]
 
 [dependency-groups]
 dev = [
-    "pyinstaller>=6.17.0",
+    "pyinstaller~=6.17.0",
 ]
 
 [project.scripts]

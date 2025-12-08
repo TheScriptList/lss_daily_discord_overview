@@ -1,0 +1,13 @@
+# Run development environment with Docker Compose:
+# docker compose -f docker-compose.dev.yml up --build --force-recreate
+
+services:
+  lss_daily_discord_overview:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lss_daily_discord_overview_dev
+    env_file:
+      - .env
+    volumes:
+      - ./cookies.txt:/app/cookies.txt:ro
