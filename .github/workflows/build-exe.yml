@@ -58,7 +58,7 @@ jobs:
 
       - name: Build Executable
         run: |
-          uv run pyinstaller ${{ env.BUILD_ARGS }} -n "${{ env.BUILD_NAME }}" -m lss_daily_discord_overview
+          uv run pyinstaller ${{ env.BUILD_ARGS }} -n "${{ env.BUILD_NAME }}" src/lss_daily_discord_overview/__main__.py
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
