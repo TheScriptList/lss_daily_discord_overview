@@ -13,7 +13,7 @@ from inquirer.shortcuts import text as text_input, confirm as confirm_input, lis
 from collections import defaultdict
 
 # Modul Infos
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 __author__ = "L0rdEnki, MisterX2000"
 
 # Konst Variablen
