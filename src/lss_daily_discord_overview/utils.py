@@ -1,6 +1,7 @@
 """Utility functions for lss_daily_discord_overview."""
 
 import os
+import sys
 import logging
 from pathlib import Path
 from http.cookiejar import MozillaCookieJar
@@ -11,7 +12,14 @@ log = logging.getLogger(__name__)
 
 
 # Get the root directory (parent of the src directory)
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+# When running as a PyInstaller bundle, use the executable's directory
+# Otherwise, use the parent of the src directory
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    ROOT_DIR = Path(sys.executable).parent
+else:
+    # Running as script
+    ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 CONFIG_FILE = ROOT_DIR / ".env"
 COOKIES_FILE = ROOT_DIR / "cookies.txt"
 
