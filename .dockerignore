@@ -1,6 +1,7 @@
 .git/
 .gitignore
 .github/
+.venv/
 docs/
 README.md
 CHANGELOG.md
