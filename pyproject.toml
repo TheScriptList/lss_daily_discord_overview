@@ -3,6 +3,8 @@ name = "lss-daily-discord-overview"
 version = "2.2.0"
 description = "Dieses Skript ruft Daten von Leitstellenspiel.de ab und sendet eine tägliche Übersicht zu Gebäude-Erweiterungen und Schulungen, die heute fertig werden, an einen Discord-Webhook."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICEN[CS]E"]
 authors = [
     { name = "Mister_X", email = "MisterX2000@users.noreply.github.com" },
     { name = "L0rdEnki", email = "77723580+L0rdEnki@users.noreply.github.com" }
