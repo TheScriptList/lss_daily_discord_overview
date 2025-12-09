@@ -4,7 +4,6 @@ import requests
 import json
 import os
 import logging
-import apprise
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
@@ -17,6 +16,9 @@ from .utils import (
     get_setting,
     load_cookies,
     parse_iso_epoch,
+    send_error,
+    send_msg,
+    add_apprise_url,
 )
 
 # Konst Variablen
@@ -27,7 +29,6 @@ SCHOOLINGS_URL = BASE_URL + "/schoolings"
 
 # Objekte Initialisieren
 log = logging.getLogger(__name__)
-appr = apprise.Apprise()
 
 
 # region FETCH
@@ -108,13 +109,6 @@ def get_schooling_details(schooling_url, cookies, profile_id_filter=None):
 # endregion FETCH
 
 
-# Funktion zum Senden von Fehlermeldungen
-def send_error(error_message):
-    log.error(error_message)
-    appr.notify(body=error_message, title="⚠️ ERROR", notify_type=apprise.NotifyType.FAILURE)
-    exit(1)
-
-
 # region MAIN
 def main():
     """Main entry point for the application"""
@@ -130,7 +124,7 @@ def main():
     # Einstellungen abfragen
     SEND_ALWAYS = get_setting("SEND_ALWAYS", message="Soll immer eine Nachricht gesendet werden?", confirm=True)
     APPRISE_URL = get_setting("APPRISE_URL", message="Apprise URL [Siehe README]")
-    appr.add(APPRISE_URL)
+    add_apprise_url(APPRISE_URL)
 
     # Weitere Daten laden
     COOKIES = load_cookies(COOKIES_FILE)
@@ -237,12 +231,12 @@ def main():
     # Nachricht vorbereiten und senden
     if webhook_results:
         log.info("Nachricht senden...")
-        appr.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
+        send_msg(msg)
     elif SEND_ALWAYS:
         # Nachricht nur senden, wenn gewünscht
         log.info("Nachricht senden...")
         msg = f"## 📢 Einträge für heute [<t:{today_start_epoch}:d>]\n\n🚫 Heute wird keine Erweiterung fertig und keine Schulung endet."
-        appr.notify(body=msg, body_format=apprise.NotifyFormat.MARKDOWN)
+        send_msg(msg)
 # endregion MAIN
 
 if __name__ == "__main__":
