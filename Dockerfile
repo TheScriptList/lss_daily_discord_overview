@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 
 # Then, use a final image without uv
-FROM python:3.13-alpine
+FROM python:3.14-alpine
 
 # Copy the application from the builder
 COPY --from=builder /app /app
