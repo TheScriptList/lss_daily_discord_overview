@@ -3,20 +3,32 @@ name = "lss-daily-discord-overview"
 version = "2.2.0"
 description = "Dieses Skript ruft Daten von Leitstellenspiel.de ab und sendet eine tägliche Übersicht zu Gebäude-Erweiterungen und Schulungen, die heute fertig werden, an einen Discord-Webhook."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICEN[CS]E"]
+authors = [
+    { name = "Mister_X", email = "MisterX2000@users.noreply.github.com" },
+    { name = "L0rdEnki", email = "77723580+L0rdEnki@users.noreply.github.com" }
+]
 requires-python = ">=3.13"
 dependencies = [
-    "apprise~=1.9.2",
-    "beautifulsoup4~=4.13.3",
-    "inquirer~=3.4.0",
-    "python-dotenv~=1.1.0",
-    "requests~=2.32.3",
+    "apprise~=1.9.5",
+    "beautifulsoup4~=4.14.3",
+    "inquirer~=3.4.1",
+    "python-dotenv~=1.2.1",
+    "requests~=2.32.5",
 ]
 
 [dependency-groups]
 dev = [
-    "pyinstaller>=6.17.0",
+    "pyinstaller~=6.17.0",
 ]
 
+[project.scripts]
+lss-daily-discord-overview = "lss_daily_discord_overview:main"
+
+[build-system]
+requires = ["uv_build>=0.9.16,<0.10.0"]
+build-backend = "uv_build"
 
 [tool.bumpversion]
 current_version = "2.2.0"
@@ -33,8 +45,3 @@ allow_dirty = false
 commit = true
 message = "Bump version: {current_version} → {new_version}"
 pre_commit_hooks = ["uv sync --upgrade", "git add uv.lock"]
-
-[[tool.bumpversion.files]]
-filename = "lss_daily_discord_overview.py"
-search = '__version__ = "{current_version}"'
-replace = '__version__ = "{new_version}"'
