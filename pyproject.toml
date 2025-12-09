@@ -14,7 +14,7 @@ dependencies = [
     "apprise~=1.9.5",
     "beautifulsoup4~=4.14.3",
     "inquirer~=3.4.1",
-    "python-dotenv~=1.2.1",
+    "pydantic-settings~=2.3.0",
     "requests~=2.32.5",
 ]
 
