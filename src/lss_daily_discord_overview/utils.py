@@ -109,11 +109,11 @@ def get_setting(name: str, message: str, confirm: bool = False, choices: list = 
     # Try to get existing value from settings
     try:
         existing_val = getattr(_settings, setting_key, None)
-        if existing_val:
+        if existing_val is not None and existing_val != "":
             log.info(f"{name} = {(str(existing_val)[:77] + '...') if len(str(existing_val)) > 80 else str(existing_val)}")
             return existing_val
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug(f"Exception occurred while getting setting '{name}': {e}", exc_info=True)
     
     # Prompt user
     if confirm:
