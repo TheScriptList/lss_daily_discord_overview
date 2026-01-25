@@ -9,9 +9,9 @@ authors = [
     { name = "Mister_X", email = "MisterX2000@users.noreply.github.com" },
     { name = "L0rdEnki", email = "77723580+L0rdEnki@users.noreply.github.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
-    "apprise~=1.9.5",
+    "apprise~=1.9.7",
     "beautifulsoup4~=4.14.3",
     "inquirer~=3.4.1",
     "python-dotenv~=1.2.1",
@@ -20,7 +20,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pyinstaller~=6.17.0",
+    "pyinstaller~=6.18.0",
 ]
 
 [project.scripts]
