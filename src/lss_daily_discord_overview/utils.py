@@ -1,13 +1,13 @@
 """Utility functions for lss_daily_discord_overview."""
 
-import os
 import sys
 import logging
 from pathlib import Path
 from http.cookiejar import MozillaCookieJar
-from dotenv import set_key
 from datetime import datetime, timezone
 import apprise
+from pydantic_settings import BaseSettings
+from inquirer.shortcuts import text as text_input, confirm as confirm_input, list_input
 
 log = logging.getLogger(__name__)
 
@@ -72,40 +72,84 @@ CONFIG_FILE = ROOT_DIR / ".env"
 COOKIES_FILE = ROOT_DIR / "cookies.txt"
 
 
-def get_setting(name, message, confirm=False, choices=None, default=None):
-    """Load or prompt for a configuration setting.
+class Settings(BaseSettings):
+    """Application settings with automatic .env support."""
+    
+    send_always: bool = False
+    apprise_url: str = ""
+    logging_level: str = "INFO"
+    debug_days: int = 0
+    
+    class Config:
+        env_file = str(CONFIG_FILE)
+        case_sensitive = False
+
+
+_settings = Settings()
+
+
+def get_setting(name: str, message: str, confirm: bool = False, choices: list = None, default = None):
+    """Get a setting from environment or prompt user interactively.
+    
+    If the setting doesn't exist, prompts the user and saves to .env file.
 
     Args:
-        name: Environment variable name
-        message: Message to display when prompting
+        name: Setting name (e.g., "APPRISE_URL")
+        message: Prompt message for user
         confirm: If True, prompt for yes/no confirmation
-        choices: List of choices for list input
+        choices: List of choices for selection
         default: Default value
 
     Returns:
-        The configuration value (from env or user input)
+        The setting value
     """
-    from inquirer.shortcuts import text as text_input, confirm as confirm_input, list_input
-
-    env_val = os.getenv(name)
-
-    if env_val:
-        log.info(f"{name} = {(str(env_val)[:77] + '...') if len(str(env_val)) > 80 else str(env_val)}")
-
-        if confirm:
-            env_val = env_val.lower() == "true"
-
-        return env_val
-
+    # Convert name to lowercase for pydantic
+    setting_key = name.lower()
+    
+    # Try to get existing value from settings
+    try:
+        existing_val = getattr(_settings, setting_key, None)
+        if existing_val is not None and existing_val != "":
+            log.info(f"{name} = {(str(existing_val)[:77] + '...') if len(str(existing_val)) > 80 else str(existing_val)}")
+            return existing_val
+    except Exception as e:
+        log.debug(f"Exception occurred while getting setting '{name}': {e}", exc_info=True)
+    
+    # Prompt user
     if confirm:
         ans = confirm_input(message=message, default=default)
+        ans_str = "true" if ans else "false"
     elif choices:
         ans = list_input(message=message, choices=choices, default=default)
+        ans_str = str(ans)
     else:
         ans = text_input(message=message, default=default)
-
-    set_key(str(CONFIG_FILE), name, str(ans))
-
+        ans_str = str(ans)
+    
+    # Save to .env file
+    env_file = Path(CONFIG_FILE)
+    content = ""
+    if env_file.exists():
+        with open(env_file, "r") as f:
+            content = f.read()
+    
+    lines = content.strip().split("\n") if content.strip() else []
+    key_found = False
+    
+    for i, line in enumerate(lines):
+        if line.startswith(f"{name}="):
+            lines[i] = f"{name}={ans_str}"
+            key_found = True
+            break
+    
+    if not key_found:
+        lines.append(f"{name}={ans_str}")
+    
+    with open(env_file, "w") as f:
+        f.write("\n".join(lines))
+        if lines:
+            f.write("\n")
+    
     return ans
 
 

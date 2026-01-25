@@ -2,16 +2,13 @@
 
 import requests
 import json
-import os
 import logging
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
-from dotenv import load_dotenv
 from importlib.metadata import version
 
 from .utils import (
-    CONFIG_FILE,
     COOKIES_FILE,
     get_setting,
     load_cookies,
@@ -19,6 +16,7 @@ from .utils import (
     send_error,
     send_msg,
     add_apprise_url,
+    Settings,
 )
 
 # Konst Variablen
@@ -112,12 +110,12 @@ def get_schooling_details(schooling_url, cookies, profile_id_filter=None):
 # region MAIN
 def main():
     """Main entry point for the application"""
-    # Einstellungen aus der Environment laden
-    load_dotenv(str(CONFIG_FILE))
-
+    # Load settings from .env and environment
+    settings = Settings()
+    
     # Logging einrichten
     logging.basicConfig(
-        level=os.getenv("LOGGING_LEVEL", "INFO"),
+        level=settings.logging_level,
         format="%(asctime)s %(name)-8s %(levelname)-8s %(message)s")
     log.info("v" + version("lss-daily-discord-overview"))
 
@@ -135,7 +133,7 @@ def main():
     # DEBUG: Um ein Zukünftiges Datum zu testen.
     # PowerShell: $env:DEBUG_DAYS=3; python lss_daily_discord_overview.py
     # Compute `today` in UTC to align with parsed timezone-aware timestamps
-    today_dt = datetime.now(timezone.utc) + timedelta(days=int(os.getenv("DEBUG_DAYS", 0)))
+    today_dt = datetime.now(timezone.utc) + timedelta(days=settings.debug_days)
     today_start_dt = datetime(today_dt.year, today_dt.month, today_dt.day, tzinfo=timezone.utc)
     tomorrow_start_dt = today_start_dt + timedelta(days=1)
     today_start_epoch = int(today_start_dt.timestamp())
