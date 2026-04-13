@@ -11,7 +11,7 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
-    "apprise~=1.9.7",
+    "apprise~=1.9.9",
     "beautifulsoup4~=4.14.3",
     "inquirer~=3.4.1",
     "python-dotenv~=1.2.1",
