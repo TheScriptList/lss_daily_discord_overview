@@ -27,7 +27,7 @@ dev = [
 lss-daily-discord-overview = "lss_daily_discord_overview:main"
 
 [build-system]
-requires = ["uv_build>=0.9.16,<0.10.0"]
+requires = ["uv_build>=0.11.6,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.bumpversion]
